@@ -28,6 +28,7 @@ class TableServiceIT {
                 .primaryKeyColumn(Column.builder()
                         .name("id")
                         .value("695815")
+                        .type("bigint")
                         .build())
                 .build();
     }

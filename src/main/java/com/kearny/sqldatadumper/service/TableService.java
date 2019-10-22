@@ -7,7 +7,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -22,7 +24,7 @@ public class TableService {
 
         buildSelect(table);
 
-        findColumnNames(table);
+        findColumnsProperties(table);
 
         buildInsert(table);
 
@@ -31,22 +33,25 @@ public class TableService {
 
     void buildSelect(Table table) throws ExecutionControl.NotImplementedException {
 
-        table.setSelect(
-                String.format(
-                        "SELECT * FROM %s.%s WHERE %s = '%s';",
-                        table.getSchemaName(),
-                        table.getName(),
-                        table.getPrimaryKeyColumn().getName(),
-                        table.getPrimaryKeyColumn().getValueToString()
-                )
-        );
+        if (!Objects.equals(table.getPrimaryKeyColumn().getValueToString(), "NULL")) {
+            table.setSelect(
+                    String.format(
+                            "SELECT * FROM %s.%s WHERE %s = '%s';",
+                            table.getSchemaName(),
+                            table.getName(),
+                            table.getPrimaryKeyColumn().getName(),
+                            table.getPrimaryKeyColumn().getValueToString()
+                    )
+            );
+        }
     }
 
-    private void findColumnNames(Table table) throws SQLException {
-        var query = String.format("SELECT column_name" +
+    private void findColumnsProperties(Table table) throws SQLException {
+        var query = String.format("SELECT column_name, data_type" +
                         " FROM information_schema.columns" +
                         " WHERE table_schema = '%s'" +
-                        " AND table_name   = '%s';",
+                        " AND table_name = '%s'" +
+                        " ORDER BY ordinal_position;",
                 table.getSchemaName(),
                 table.getName());
         var resultSet = connectionService.runSqlQuery(query);
@@ -54,41 +59,52 @@ public class TableService {
         while (resultSet.next()) {
             columns.add(Column.builder()
                     .name(resultSet.getString(1))
+                    .type(resultSet.getString(2))
                     .build());
         }
 
         table.setColumns(columns);
     }
 
-    private void buildInsert(Table table) throws SQLException {
+    private void buildInsert(Table table) throws SQLException, ExecutionControl.NotImplementedException {
 
-        var values = new ArrayList<String>();
+        if (table.getSelect() != null) {
+            final var resultSet = connectionService.runSqlQuery(table.getSelect());
+            final var metaData = resultSet.getMetaData();
 
-        final var resultSet = connectionService.runSqlQuery(table.getSelect());
-        final var metaData = resultSet.getMetaData();
+            while (resultSet.next()) {
+                for (int i = 1; i <= metaData.getColumnCount(); i++) {
+                    final var column = table.getColumns().get(i - 1);
 
-        while (resultSet.next()) {
-            for (int i = 1; i <= metaData.getColumnCount(); i++) {
-                final var resultSetValue = resultSet.getString(i);
-                final var column = table.getColumns().get(i - 1);
-                column.setValue(resultSetValue);
-                column.setType(metaData.getColumnTypeName(i));
-                values.add(resultSetValue);
+                    if (Objects.equals(column.getType(), "timestamp")) {
+                        var timestamp = resultSet.getTimestamp(i);
+                        var date = new Date(timestamp.getTime());
+                        var simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+                        column.setValue(simpleDateFormat.format(date) + "000");
+                    }
+                    column.setValue(resultSet.getString(i));
+                }
             }
-        }
 
-        List<String> columnNames = table.getColumns().stream()
-                .map(Column::getName)
-                .collect(Collectors.toList());
-        table.setInsert(
-                String.format(
-                        "INSERT INTO %s.%s (%s) VALUES (%s);",
-                        table.getSchemaName(),
-                        table.getName(),
-                        String.join(", ", columnNames),
-                        String.join(", ", values)
-                )
-        );
+            List<String> columnNames = new ArrayList<>();
+            for (Column column : table.getColumns()) {
+                String valueToString = column.getValueToString();
+                columnNames.add(valueToString);
+            }
+
+            var values = table.getColumns().stream()
+                    .map(Column::getValue)
+                    .collect(Collectors.toList());
+            table.setInsert(
+                    String.format(
+                            "INSERT INTO %s.%s (%s) VALUES (%s);",
+                            table.getSchemaName(),
+                            table.getName(),
+                            String.join(", ", columnNames),
+                            String.join(", ", values)
+                    )
+            );
+        }
     }
 
     private void findForeignTables(Table table) throws SQLException, ExecutionControl.NotImplementedException {
