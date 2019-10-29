@@ -1,16 +1,13 @@
 package com.kearny.sqldatadumper.domain;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.*;
 
 class TableTest {
 
@@ -18,21 +15,22 @@ class TableTest {
 
     @BeforeEach
     void setUp() {
+
         final var intColumn = Column.builder()
-                .ordinal(1)
-                .name("id")
-                .type("bigint")
-                .build();
+                                    .ordinal(1)
+                                    .name("id")
+                                    .type("bigint")
+                                    .build();
         final var stringColumn = Column.builder()
-                .ordinal(2)
-                .name("name")
-                .type("character")
-                .build();
+                                       .ordinal(2)
+                                       .name("name")
+                                       .type("character")
+                                       .build();
         final var booleanColumn = Column.builder()
-                .ordinal(3)
-                .name("isPublished")
-                .type("boolean")
-                .build();
+                                        .ordinal(3)
+                                        .name("isPublished")
+                                        .type("boolean")
+                                        .build();
         final var columns = new ArrayList<Column>();
         columns.add(intColumn);
         columns.add(stringColumn);
@@ -52,17 +50,17 @@ class TableTest {
         secondRowValues[2] = "F";
         rows.put(1, secondRowValues);
 
-
         table = Table.builder()
-                .schemaName("valo_fixe")
-                .name("valorisation")
-                .columns(columns)
-                .rows(rows)
-                .build();
+                     .schemaName("valo_fixe")
+                     .name("valorisation")
+                     .columns(columns)
+                     .rows(rows)
+                     .build();
     }
 
     @AfterEach
     void tearDown() {
+
     }
 
     @Test
@@ -107,8 +105,8 @@ class TableTest {
         // Given
 
         // When
-        final var trueValueToString = table.getValueToString(0,3);
-        final var falseValueToString = table.getValueToString(1,3);
+        final var trueValueToString = table.getValueToString(0, 3);
+        final var falseValueToString = table.getValueToString(1, 3);
 
         // Then
         assertThat(trueValueToString).isEqualTo("TRUE");
@@ -121,7 +119,7 @@ class TableTest {
         // Given
 
         // When
-        final var valueToString = table.getValueToString(0,2);
+        final var valueToString = table.getValueToString(0, 2);
 
         // Then
         assertThat(valueToString).isEqualTo("NULL");

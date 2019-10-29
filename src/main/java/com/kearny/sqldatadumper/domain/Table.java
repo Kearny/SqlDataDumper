@@ -1,10 +1,11 @@
 package com.kearny.sqldatadumper.domain;
 
-import lombok.Data;
-import lombok.experimental.SuperBuilder;
-
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+
+import lombok.Data;
+import lombok.experimental.SuperBuilder;
 
 @SuperBuilder
 @Data
@@ -48,11 +49,19 @@ public class Table {
     }
 
     public String getValue(int rowIndex, int ordinal) {
+
         final var values = rows.get(rowIndex);
         return values[ordinal - 1];
     }
 
-    public void setValue(int rowNumber, int dataOrdinal, String value) {
-        rows.get(rowNumber)[dataOrdinal] = value;
+    public List<String> getRowValuesToString(final int rowIndex) {
+
+        final var rowValuesToString = new ArrayList<String>();
+
+        for (int i = 1; i <= rows.get(rowIndex).length; i++) {
+            rowValuesToString.add(getValueToString(rowIndex, i));
+        }
+
+        return rowValuesToString;
     }
 }
