@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import com.kearny.sqldatadumper.domain.Column;
+import com.kearny.sqldatadumper.domain.ForeignTable;
 import com.kearny.sqldatadumper.domain.Table;
 
 import static org.assertj.core.api.Assertions.*;
@@ -18,6 +19,7 @@ import static org.assertj.core.api.Assertions.*;
 @SpringBootTest
 class TableServiceIT {
 
+    private static final String FIRST_ROW_ID = "695815";
     private final Column idColumn = Column.builder()
                                           .ordinal(1)
                                           .name("id")
@@ -55,44 +57,37 @@ class TableServiceIT {
         final var rows = new HashMap<Integer, String[]>();
 
         final var firstRowValues = new String[columns.size()];
-        firstRowValues[0] = "143430";
+        firstRowValues[0] = FIRST_ROW_ID;
         firstRowValues[1] = "201906";
         firstRowValues[2] = "15090963-41d9-47cc-8be3-6300591b2d82";
         firstRowValues[3] = "198";
         rows.put(0, firstRowValues);
-
-        final var secondRowValues = new String[columns.size()];
-        firstRowValues[0] = "695816";
-        firstRowValues[1] = "201906";
-        firstRowValues[2] = "1ee5dfac-83f8-4a5d-b2e9-2435c9462799";
-        firstRowValues[3] = "198";
-        rows.put(1, secondRowValues);
 
         table = Table.builder()
                      .schemaName("valo_fixe")
                      .name("valorisation")
                      .columns(columns)
                      .rows(rows)
-                     .select("SELECT * FROM valo_fixe.valorisation WHERE id = 143430;")
+                     .select(String.format("SELECT * FROM valo_fixe.valorisation WHERE id = %s;", FIRST_ROW_ID))
                      .build();
     }
 
-       @Test
-       void hydrateTable()
-               throws SQLException, IOException {
+    @Test
+    void hydrateTable()
+            throws SQLException, IOException {
 
-           // Given
-           var table = Table.builder()
-                        .schemaName("valo_fixe")
-                        .name("valorisation")
-                        .select("SELECT * FROM valo_fixe.valorisation WHERE id = 143430;")
-                        .build();
+        // Given
+        final var table = Table.builder()
+                               .schemaName("valo_fixe")
+                               .name("valorisation")
+                               .select(String.format("SELECT * FROM valo_fixe.valorisation WHERE id = %s;", FIRST_ROW_ID))
+                               .build();
 
-           // When
-           tableService.hydrateTable(table);
+        // When
+        tableService.hydrateTable(table);
 
-           // Then
-       }
+        // Then
+    }
 
     @Test
     void testBuildSelect() {
@@ -103,7 +98,7 @@ class TableServiceIT {
         tableService.buildSelect(table);
 
         // Then
-        assertThat(table.getSelect()).isEqualTo("SELECT * FROM valo_fixe.valorisation WHERE id = 695816;");
+        assertThat(table.getSelect()).isEqualTo(String.format("SELECT * FROM valo_fixe.valorisation WHERE id = %s;", FIRST_ROW_ID));
     }
 
     @Test
@@ -139,24 +134,56 @@ class TableServiceIT {
         // Then
         assertThat(table.getRows()).isNotEmpty();
         assertThat(table.getRows().size()).isEqualTo(1);
-        assertThat(table.getValue(0, 1)).isEqualTo("143430");
+        assertThat(table.getValue(0, 1)).isEqualTo(FIRST_ROW_ID);
+    }
+
+    @Test
+    void testFindForeignTables()
+            throws SQLException {
+
+        // Given
+
+        // When
+        tableService.findForeignTables(table);
+
+        // Then
+        final var foreignTables = table.getForeignTables();
+        assertThat(foreignTables).isNotNull();
+        assertThat(foreignTables.size()).isEqualTo(14);
+    }
+
+    @Test
+    void testBuildForeignTableFromDefinition() {
+
+        // Given
+        final var expectedTable = ForeignTable.builder()
+                                              .name("partenaire")
+                                              .schemaName("valo_common")
+                                              .linkParentColumn("code_partenaire")
+                                              .linkChildrenColumn("code")
+                                              .build();
+        final var definition = "FOREIGN KEY (code_partenaire) REFERENCES valo_common.partenaire(code) MATCH FULL";
+
+        // When
+        final var foreignTableFromDef = tableService.buildForeignTableFromDefinition(definition);
+
+        // Then
+        assertThat(foreignTableFromDef).isNotNull();
+        assertThat(foreignTableFromDef).isEqualTo(expectedTable);
     }
 
     @Test
     void testBuildInsertBaseTable() {
 
         // Given
-        table.setInsert(null);
-        final var firstRow = table.getRows().get(0);
-        final var rows = new HashMap<Integer, String[]>();
-        rows.put(0,firstRow);
-        table.setRows(rows);
 
         // When
         tableService.buildInsert(table);
 
         // Then
         assertThat(table.getInsert()).isNotNull();
-        assertThat(table.getInsert()).isEqualTo("INSERT INTO valo_fixe.valorisation (id, code_mois, id_evt, id_payplan) VALUES (695816, '201906', '1ee5dfac-83f8-4a5d-b2e9-2435c9462799', 198);");
+        assertThat(table.getInsert()).isEqualTo(
+                "INSERT INTO valo_fixe.valorisation (id, code_mois, id_evt, id_payplan) VALUES (" + FIRST_ROW_ID
+                        + ", '201906', '15090963-41d9-47cc-8be3-6300591b2d82', 198);");
     }
 }

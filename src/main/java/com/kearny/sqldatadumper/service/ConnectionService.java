@@ -12,7 +12,7 @@ public class ConnectionService {
 
     private Connection connection;
 
-    public ResultSet runSqlQuery(String query)
+    public ResultSet runSqlQuery(final String query)
             throws SQLException {
 
         return getConnectionInstance().createStatement().executeQuery(query);
@@ -21,11 +21,11 @@ public class ConnectionService {
     private Connection getConnectionInstance() {
 
         if (connection == null) {
-            var url = "jdbc:postgresql://db04-mly-pp.phys.pack:1520/valorisation";
+            final var url = "jdbc:postgresql://localhost:5432/melody";
 
             try {
-                this.connection = DriverManager.getConnection(url, "melody_adm", "6epi9vB2lLQTr0F");
-            } catch (SQLException e) {
+                connection = DriverManager.getConnection(url, "postgres", "root");
+            } catch (final SQLException e) {
                 e.printStackTrace();
             }
         }

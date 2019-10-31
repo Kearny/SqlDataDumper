@@ -19,14 +19,14 @@ public class Table {
     private HashMap<Integer, String[]> rows;
     private List<Table> foreignTables;
 
-    public String getValueToString(int rowIndex, int ordinal) {
+    public String getValueToString(final int rowIndex, final int ordinal) {
 
-        String value = getValue(rowIndex, ordinal);
+        final String value = getValue(rowIndex, ordinal);
         if (value == null || value.equalsIgnoreCase("NULL")) {
             return "NULL";
         }
 
-        var type = columns.get(ordinal - 1).getType();
+        final var type = columns.get(ordinal - 1).getType();
 
         switch (type) {
             case "bpchar":
@@ -48,7 +48,7 @@ public class Table {
         }
     }
 
-    public String getValue(int rowIndex, int ordinal) {
+    public String getValue(final int rowIndex, final int ordinal) {
 
         final var values = rows.get(rowIndex);
         return values[ordinal - 1];

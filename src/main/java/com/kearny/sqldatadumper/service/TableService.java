@@ -17,6 +17,7 @@ import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Service;
 
 import com.kearny.sqldatadumper.domain.Column;
+import com.kearny.sqldatadumper.domain.ForeignTable;
 import com.kearny.sqldatadumper.domain.Table;
 
 import lombok.extern.slf4j.Slf4j;
@@ -26,10 +27,10 @@ import lombok.extern.slf4j.Slf4j;
 public class TableService {
 
     private final ConnectionService connectionService;
+    private final Set<String> exportedTables = new HashSet<>();
     private BufferedWriter writer;
-    private Set<String> exportedTables = new HashSet<>();
 
-    public TableService(ConnectionService connectionService) {
+    public TableService(final ConnectionService connectionService) {
 
         this.connectionService = connectionService;
         try {
@@ -37,12 +38,12 @@ public class TableService {
                     new FileOutputStream("export.sql"), StandardCharsets.UTF_8
             ));
             writer.write("-- Generated File --");
-        } catch (IOException e) {
+        } catch (final IOException e) {
             e.printStackTrace();
         }
     }
 
-    void hydrateTable(Table table)
+    void hydrateTable(final Table table)
             throws SQLException, IOException {
 
         // We don't want to parse twice the same table, maybe ?
@@ -62,13 +63,14 @@ public class TableService {
 
         buildInsert(table);
 
+        findForeignTables(table);
         //        hydrateForeignTables(table);
 
         writeData(table);
         writer.flush();
     }
 
-    void buildSelect(Table table) {
+    void buildSelect(final Table table) {
 
         table.setSelect(
                 String.format(
@@ -81,20 +83,20 @@ public class TableService {
         );
     }
 
-    void findColumnsProperties(Table table)
+    void findColumnsProperties(final Table table)
             throws SQLException {
 
-        var query = String.format("SELECT column_name, data_type, ordinal_position" +
-                                          " FROM information_schema.columns" +
-                                          " WHERE table_schema = '%s'" +
-                                          " AND table_name = '%s'" +
-                                          " ORDER BY ordinal_position;",
-                                  table.getSchemaName(),
-                                  table.getName());
+        final var query = String.format("SELECT column_name, data_type, ordinal_position" +
+                                                " FROM information_schema.columns" +
+                                                " WHERE table_schema = '%s'" +
+                                                " AND table_name = '%s'" +
+                                                " ORDER BY ordinal_position;",
+                                        table.getSchemaName(),
+                                        table.getName());
 
-        var resultSet = connectionService.runSqlQuery(query);
+        final var resultSet = connectionService.runSqlQuery(query);
 
-        var columns = new ArrayList<Column>();
+        final var columns = new ArrayList<Column>();
         while (resultSet.next()) {
             columns.add(Column.builder()
                               .name(resultSet.getString(1))
@@ -106,16 +108,16 @@ public class TableService {
         table.setColumns(columns);
     }
 
-    void findAllRowsData(Table table)
+    void findAllRowsData(final Table table)
             throws SQLException {
 
-        var resultSet = connectionService.runSqlQuery(table.getSelect());
+        final var resultSet = connectionService.runSqlQuery(table.getSelect());
 
-        var rows = new HashMap<Integer, String[]>();
+        final var rows = new HashMap<Integer, String[]>();
         var nbRows = 0;
         while (resultSet.next()) {
             final var columnsSize = table.getColumns().size();
-            var row = new String[columnsSize];
+            final var row = new String[columnsSize];
             for (int i = 0; i < columnsSize; i++) {
                 row[i] = resultSet.getString(i + 1);
             }
@@ -126,18 +128,18 @@ public class TableService {
         table.setRows(rows);
     }
 
-    void buildInsert(Table table) {
+    void buildInsert(final Table table) {
 
-        StringBuilder insert = new StringBuilder();
+        final StringBuilder insert = new StringBuilder();
 
         final var columnNames = table.getColumns().stream()
                                      .map(Column::getName)
                                      .collect(Collectors.toList());
 
-        for (Map.Entry<Integer, String[]> entry : table.getRows().entrySet()) {
-            Integer i = entry.getKey();
-            String[] values = entry.getValue();
-            var stringRowValues = table.getRowValuesToString(i);
+        for (final Map.Entry<Integer, String[]> entry : table.getRows().entrySet()) {
+            final Integer i = entry.getKey();
+            final String[] values = entry.getValue();
+            final var stringRowValues = table.getRowValuesToString(i);
 
             insert.append(String.format(
                     "INSERT INTO %s.%s (%s) VALUES (%s);",
@@ -151,61 +153,58 @@ public class TableService {
         table.setInsert(insert.toString());
     }
 
-    //    private void hydrateForeignTables(Table table) throws SQLException, ExecutionControl.NotImplementedException, IOException {
-    //        ArrayList<Table> foreignTables = findForeignTables(table);
-    //
-    //        for (Table foreignTable : foreignTables) {
-    //            hydrateTable(foreignTable);
-    //
-    //            foreignTables.add(foreignTable);
-    //        }
-    //
-    //        table.setForeignTables(foreignTables);
-    //    }
-    //
-    //    private ArrayList<Table> findForeignTables(Table table) throws SQLException {
-    //        var query = String.format("SELECT ccu.table_schema AS foreign_table_schema," +
-    //                        " ccu.table_name AS foreign_table_name," +
-    //                        " ccu.column_name AS foreign_column_name," +
-    //                        " kcu.column_name AS source_column_name" +
-    //                        " FROM information_schema.table_constraints AS tc" +
-    //                        " JOIN information_schema.key_column_usage AS kcu ON tc.constraint_name = kcu.constraint_name" +
-    //                        " AND tc.table_schema = kcu.table_schema" +
-    //                        " JOIN information_schema.constraint_column_usage AS ccu ON ccu.constraint_name = tc.constraint_name" +
-    //                        " AND ccu.table_schema = tc.table_schema" +
-    //                        " WHERE tc.constraint_type = 'FOREIGN KEY'" +
-    //                        " AND kcu.table_schema = '%s'" +
-    //                        " AND kcu.table_name = '%s'" +
-    //                        " GROUP BY foreign_table_schema, foreign_table_name, source_column_name, foreign_column_name;",
-    //                table.getSchemaName(),
-    //                table.getName());
-    //
-    //        final var resultSet = connectionService.runSqlQuery(query);
-    //        var foreignTables = new ArrayList<Table>();
-    //        while (resultSet.next()) {
-    //            var foreignTableSchema = resultSet.getString(1);
-    //            var foreignTableName = resultSet.getString(2);
-    //            var foreignColumnName = resultSet.getString(3);
-    //            var sourceColumnName = resultSet.getString(4);
-    //
-    //            final var rows = new HashMap<Integer, String[]>();
-    //            final var rowData = null;
-    //            rowData.add(table.getValue(sourceColumnName));
-    //            rows.put(0, rowData);
-    //
-    //            final var foreignTable = Table.builder()
-    //                    .schemaName(foreignTableSchema)
-    //                    .name(foreignTableName)
-    //                    .rows(rows)
-    //                    .build();
-    //
-    //
-    //            foreignTables.add(foreignTable);
-    //        }
-    //        return foreignTables;
-    //    }
+    void hydrateForeignTables(final Table table)
+            throws SQLException, IOException {
 
-    private void writeData(Table table) {
+        for (final Table foreignTable : table.getForeignTables()) {
+            hydrateTable(foreignTable);
+        }
+    }
+
+    void findForeignTables(final Table table)
+            throws SQLException {
+
+        final var query = String.format("SELECT pg_catalog.pg_get_constraintdef(r.oid, TRUE) AS condef" +
+                                                " FROM pg_catalog.pg_constraint r" +
+                                                " WHERE r.conrelid = '%s.%s'::regclass" +
+                                                "   AND r.contype = 'f'" +
+                                                " ORDER BY 1;",
+                                        table.getSchemaName(),
+                                        table.getName());
+
+        final var resultSet = connectionService.runSqlQuery(query);
+        final var foreignTables = new ArrayList<Table>();
+        while (resultSet.next()) {
+            final var foreignTable = buildForeignTableFromDefinition(resultSet.getString(1));
+            foreignTables.add(foreignTable);
+        }
+
+        table.setForeignTables(foreignTables);
+    }
+
+    ForeignTable buildForeignTableFromDefinition(final String string) {
+
+        var inputString = string.replace("FOREIGN KEY (", "");
+        inputString = inputString.replace(") REFERENCES ", " ");
+        inputString = inputString.replace(".", " ");
+        inputString = inputString.replace("(", " ");
+        inputString = inputString.replace(")", "");
+        final var s = inputString.split(" ");
+
+        final var sourceColumnName = s[0];
+        final var foreignSchemaName = s[1];
+        final var foreignTableName = s[2];
+        final var foreignColumnName = s[3];
+
+        return ForeignTable.builder()
+                           .name(foreignTableName)
+                           .schemaName(foreignSchemaName)
+                           .linkParentColumn(sourceColumnName)
+                           .linkChildrenColumn(foreignColumnName)
+                           .build();
+    }
+
+    private void writeData(final Table table) {
 
         if (table.getForeignTables() != null && !table.getForeignTables().isEmpty()) {
             table.getForeignTables().forEach(this::writeData);
@@ -215,7 +214,7 @@ public class TableService {
             try {
                 writer.newLine();
                 writer.append(table.getInsert());
-            } catch (IOException e) {
+            } catch (final IOException e) {
                 e.printStackTrace();
             }
         }
