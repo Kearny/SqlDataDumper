@@ -64,7 +64,8 @@ public class TableService {
         buildInsert(table);
 
         findForeignTables(table);
-        //        hydrateForeignTables(table);
+
+        hydrateForeignTables(table);
 
         writeData(table);
         writer.flush();
@@ -191,16 +192,16 @@ public class TableService {
         inputString = inputString.replace(")", "");
         final var s = inputString.split(" ");
 
-        final var sourceColumnName = s[0];
-        final var foreignSchemaName = s[1];
-        final var foreignTableName = s[2];
-        final var foreignColumnName = s[3];
+        final var linkParentColumn = s[0];
+        final var schemaName = s[1];
+        final var name = s[2];
+        final var linkChildrenColumn = s[3];
 
         return ForeignTable.builder()
-                           .name(foreignTableName)
-                           .schemaName(foreignSchemaName)
-                           .linkParentColumn(sourceColumnName)
-                           .linkChildrenColumn(foreignColumnName)
+                           .name(name)
+                           .schemaName(schemaName)
+                           .linkParentColumn(linkParentColumn)
+                           .linkChildrenColumn(linkChildrenColumn)
                            .build();
     }
 
