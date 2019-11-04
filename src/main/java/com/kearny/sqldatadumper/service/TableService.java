@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -13,7 +14,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Service;
 
 import com.kearny.sqldatadumper.domain.Column;
@@ -51,11 +51,11 @@ public class TableService {
             return;
         }
 
-        exportedTables.add(table.getName());
-
-        if (Strings.isBlank(table.getSelect())) {
-            buildSelect(table);
+        if (table.getSelect() == null) {
+            return;
         }
+
+        exportedTables.add(table.getName());
 
         findColumnsProperties(table);
 
@@ -69,19 +69,6 @@ public class TableService {
 
         writeData(table);
         writer.flush();
-    }
-
-    void buildSelect(final Table table) {
-
-        table.setSelect(
-                String.format(
-                        "SELECT * FROM %s.%s WHERE %s = %s;",
-                        table.getSchemaName(),
-                        table.getName(),
-                        table.getColumns().get(0).getName(),
-                        table.getValueToString(0, 1)
-                )
-        );
     }
 
     void findColumnsProperties(final Table table)
@@ -139,7 +126,6 @@ public class TableService {
 
         for (final Map.Entry<Integer, String[]> entry : table.getRows().entrySet()) {
             final Integer i = entry.getKey();
-            final String[] values = entry.getValue();
             final var stringRowValues = table.getRowValuesToString(i);
 
             insert.append(String.format(
@@ -177,10 +163,32 @@ public class TableService {
         final var foreignTables = new ArrayList<Table>();
         while (resultSet.next()) {
             final var foreignTable = buildForeignTableFromDefinition(resultSet.getString(1));
+
+            // TODO : Prendre en compte toutes les lignes pas juste la première
+            buildForeignTableSelect(foreignTable, table.getValueToString(0, foreignTable.getLinkParentColumn()));
+
             foreignTables.add(foreignTable);
         }
 
         table.setForeignTables(foreignTables);
+    }
+
+    private void buildForeignTableSelect(final ForeignTable foreignTable, final String linkValue) {
+
+        if (linkValue.equalsIgnoreCase("NULL")) {
+            return;
+        }
+
+        var select = MessageFormat.format(
+                "SELECT * FROM {0}.{1}"
+                        + " WHERE {2} = {3}",
+                foreignTable.getSchemaName(),
+                foreignTable.getName(),
+                foreignTable.getLinkChildrenColumn(),
+                linkValue
+        );
+
+        foreignTable.setSelect(select);
     }
 
     ForeignTable buildForeignTableFromDefinition(final String string) {

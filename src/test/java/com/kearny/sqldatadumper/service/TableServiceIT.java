@@ -90,18 +90,6 @@ class TableServiceIT {
     }
 
     @Test
-    void testBuildSelect() {
-
-        // Given
-
-        // When
-        tableService.buildSelect(table);
-
-        // Then
-        assertThat(table.getSelect()).isEqualTo(String.format("SELECT * FROM valo_fixe.valorisation WHERE id = %s;", FIRST_ROW_ID));
-    }
-
-    @Test
     void testFindColumnsProperties()
             throws SQLException {
 

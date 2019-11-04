@@ -3,21 +3,41 @@ package com.kearny.sqldatadumper.domain;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 
 import lombok.Data;
+import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
 
 @SuperBuilder
 @Data
 public class Table {
 
+    @NonNull
     private String schemaName;
+
+    @NonNull
     private String name;
-    private String select;
-    private String insert;
+
     private List<Column> columns;
+
     private HashMap<Integer, String[]> rows;
+
+    private String select;
+
+    private String insert;
+
     private List<Table> foreignTables;
+
+    public String getValueToString(final int rowIndex, final String columnName) {
+
+        final var foundColumnOptional = columns.stream()
+                                               .filter(column -> Objects.equals(column.getName(), columnName))
+                                               .findFirst();
+
+        return foundColumnOptional.map(column -> getValueToString(rowIndex, column.getOrdinal()))
+                                  .orElse(null);
+    }
 
     public String getValueToString(final int rowIndex, final int ordinal) {
 
