@@ -20,28 +20,16 @@ import com.kearny.sqldatadumper.domain.Column;
 import com.kearny.sqldatadumper.domain.ForeignTable;
 import com.kearny.sqldatadumper.domain.Table;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+@RequiredArgsConstructor
 @Slf4j
 @Service
 public class TableService {
 
     private final ConnectionService connectionService;
-    private final Set<String> exportedTables = new HashSet<>();
-    private BufferedWriter writer;
-
-    public TableService(final ConnectionService connectionService) {
-
-        this.connectionService = connectionService;
-        try {
-            writer = new BufferedWriter(new OutputStreamWriter(
-                    new FileOutputStream("export.sql"), StandardCharsets.UTF_8
-            ));
-            writer.write("-- Generated File --");
-        } catch (final IOException e) {
-            e.printStackTrace();
-        }
-    }
+    private Set<String> exportedTables = new HashSet<>();
 
     void hydrateTable(final Table table)
             throws SQLException, IOException {
@@ -66,9 +54,6 @@ public class TableService {
         findForeignTables(table);
 
         hydrateForeignTables(table);
-
-        writeData(table);
-        writer.flush();
     }
 
     void findColumnsProperties(final Table table)
@@ -175,7 +160,7 @@ public class TableService {
 
     private void buildForeignTableSelect(final ForeignTable foreignTable, final String linkValue) {
 
-        if (linkValue.equalsIgnoreCase("NULL")) {
+        if (linkValue == null || linkValue.equalsIgnoreCase("NULL")) {
             return;
         }
 
@@ -211,21 +196,5 @@ public class TableService {
                            .linkParentColumn(linkParentColumn)
                            .linkChildrenColumn(linkChildrenColumn)
                            .build();
-    }
-
-    private void writeData(final Table table) {
-
-        if (table.getForeignTables() != null && !table.getForeignTables().isEmpty()) {
-            table.getForeignTables().forEach(this::writeData);
-        }
-
-        if (table.getInsert() != null) {
-            try {
-                writer.newLine();
-                writer.append(table.getInsert());
-            } catch (final IOException e) {
-                e.printStackTrace();
-            }
-        }
     }
 }

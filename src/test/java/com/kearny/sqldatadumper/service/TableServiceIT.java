@@ -45,6 +45,9 @@ class TableServiceIT {
     @Autowired
     private TableService tableService;
 
+    @Autowired
+    private DataWriterService dataWriterService;
+
     @BeforeEach
     void setUp() {
 
@@ -85,6 +88,7 @@ class TableServiceIT {
 
         // When
         tableService.hydrateTable(table);
+        dataWriterService.writeTableData(table);
 
         // Then
     }

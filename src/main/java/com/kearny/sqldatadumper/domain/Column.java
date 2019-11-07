@@ -15,8 +15,4 @@ public class Column {
 
     @NonNull
     private String type;
-
-    public void setValue(final String string) {
-
-    }
 }
