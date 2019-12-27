@@ -32,7 +32,7 @@ public class DataWriterServiceTest {
         // Then
         assertThat(insert).containsExactly(
                 "INSERT INTO schema.H...",
-                "INSERT INTO schema.G..",
+                "INSERT INTO schema.G...",
                 "INSERT INTO schema.F...",
                 "INSERT INTO schema.E...",
                 "INSERT INTO schema.D...",
