@@ -5,12 +5,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
-import lombok.Data;
-import lombok.NonNull;
-import lombok.experimental.SuperBuilder;
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 
-@SuperBuilder
+import lombok.Data;
+import lombok.experimental.SuperBuilder;
+import lombok.val;
+
 @Data
+@SuperBuilder
 public class Table {
 
     @NonNull
@@ -27,6 +30,7 @@ public class Table {
 
     private String insert;
 
+    @Nullable
     private List<Table> foreignTables;
 
     public String getValueToString(final int rowIndex, final String columnName) {
@@ -41,12 +45,12 @@ public class Table {
 
     public String getValueToString(final int rowIndex, final int ordinal) {
 
-        final String value = getValue(rowIndex, ordinal);
+        val value = getValue(rowIndex, ordinal);
         if (value == null || value.equalsIgnoreCase("NULL")) {
             return "NULL";
         }
 
-        final var type = columns.get(ordinal - 1).getType();
+        val type = columns.get(ordinal - 1).getType();
 
         switch (type) {
             case "bpchar":
@@ -70,13 +74,14 @@ public class Table {
 
     public String getValue(final int rowIndex, final int ordinal) {
 
-        final var values = rows.get(rowIndex);
+        val values = rows.get(rowIndex);
+
         return values[ordinal - 1];
     }
 
     public List<String> getRowValuesToString(final int rowIndex) {
 
-        final var rowValuesToString = new ArrayList<String>();
+        val rowValuesToString = new ArrayList<String>();
 
         for (int i = 1; i <= rows.get(rowIndex).length; i++) {
             rowValuesToString.add(getValueToString(rowIndex, i));
@@ -85,3 +90,4 @@ public class Table {
         return rowValuesToString;
     }
 }
+

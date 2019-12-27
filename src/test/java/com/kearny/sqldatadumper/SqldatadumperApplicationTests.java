@@ -10,5 +10,4 @@ class SqldatadumperApplicationTests {
     void contextLoads() {
 
     }
-
 }

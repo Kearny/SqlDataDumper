@@ -1,10 +1,6 @@
 package com.kearny.sqldatadumper.service;
 
-import java.io.BufferedWriter;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -22,6 +18,7 @@ import com.kearny.sqldatadumper.domain.Table;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -59,17 +56,17 @@ public class TableService {
     void findColumnsProperties(final Table table)
             throws SQLException {
 
-        final var query = String.format("SELECT column_name, data_type, ordinal_position" +
-                                                " FROM information_schema.columns" +
-                                                " WHERE table_schema = '%s'" +
-                                                " AND table_name = '%s'" +
-                                                " ORDER BY ordinal_position;",
-                                        table.getSchemaName(),
-                                        table.getName());
+        val query = String.format("SELECT column_name, data_type, ordinal_position" +
+                                          " FROM information_schema.columns" +
+                                          " WHERE table_schema = '%s'" +
+                                          " AND table_name = '%s'" +
+                                          " ORDER BY ordinal_position;",
+                                  table.getSchemaName(),
+                                  table.getName());
 
-        final var resultSet = connectionService.runSqlQuery(query);
+        val resultSet = connectionService.runSqlQuery(query);
 
-        final var columns = new ArrayList<Column>();
+        val columns = new ArrayList<Column>();
         while (resultSet.next()) {
             columns.add(Column.builder()
                               .name(resultSet.getString(1))
@@ -84,13 +81,13 @@ public class TableService {
     void findAllRowsData(final Table table)
             throws SQLException {
 
-        final var resultSet = connectionService.runSqlQuery(table.getSelect());
+        val resultSet = connectionService.runSqlQuery(table.getSelect());
 
-        final var rows = new HashMap<Integer, String[]>();
+        val rows = new HashMap<Integer, String[]>();
         var nbRows = 0;
         while (resultSet.next()) {
-            final var columnsSize = table.getColumns().size();
-            final var row = new String[columnsSize];
+            val columnsSize = table.getColumns().size();
+            val row = new String[columnsSize];
             for (int i = 0; i < columnsSize; i++) {
                 row[i] = resultSet.getString(i + 1);
             }
@@ -105,13 +102,13 @@ public class TableService {
 
         final StringBuilder insert = new StringBuilder();
 
-        final var columnNames = table.getColumns().stream()
-                                     .map(Column::getName)
-                                     .collect(Collectors.toList());
+        val columnNames = table.getColumns().stream()
+                               .map(Column::getName)
+                               .collect(Collectors.toList());
 
         for (final Map.Entry<Integer, String[]> entry : table.getRows().entrySet()) {
             final Integer i = entry.getKey();
-            final var stringRowValues = table.getRowValuesToString(i);
+            val stringRowValues = table.getRowValuesToString(i);
 
             insert.append(String.format(
                     "INSERT INTO %s.%s (%s) VALUES (%s);",
@@ -136,18 +133,18 @@ public class TableService {
     void findForeignTables(final Table table)
             throws SQLException {
 
-        final var query = String.format("SELECT pg_catalog.pg_get_constraintdef(r.oid, TRUE) AS condef" +
-                                                " FROM pg_catalog.pg_constraint r" +
-                                                " WHERE r.conrelid = '%s.%s'::regclass" +
-                                                "   AND r.contype = 'f'" +
-                                                " ORDER BY 1;",
-                                        table.getSchemaName(),
-                                        table.getName());
+        val query = String.format("SELECT pg_catalog.pg_get_constraintdef(r.oid, TRUE) AS condef" +
+                                          " FROM pg_catalog.pg_constraint r" +
+                                          " WHERE r.conrelid = '%s.%s'::regclass" +
+                                          "   AND r.contype = 'f'" +
+                                          " ORDER BY 1;",
+                                  table.getSchemaName(),
+                                  table.getName());
 
-        final var resultSet = connectionService.runSqlQuery(query);
-        final var foreignTables = new ArrayList<Table>();
+        val resultSet = connectionService.runSqlQuery(query);
+        val foreignTables = new ArrayList<Table>();
         while (resultSet.next()) {
-            final var foreignTable = buildForeignTableFromDefinition(resultSet.getString(1));
+            val foreignTable = buildForeignTableFromDefinition(resultSet.getString(1));
 
             // TODO : Prendre en compte toutes les lignes pas juste la première
             buildForeignTableSelect(foreignTable, table.getValueToString(0, foreignTable.getLinkParentColumn()));
@@ -164,7 +161,7 @@ public class TableService {
             return;
         }
 
-        var select = MessageFormat.format(
+        val select = MessageFormat.format(
                 "SELECT * FROM {0}.{1}"
                         + " WHERE {2} = {3}",
                 foreignTable.getSchemaName(),
@@ -183,12 +180,12 @@ public class TableService {
         inputString = inputString.replace(".", " ");
         inputString = inputString.replace("(", " ");
         inputString = inputString.replace(")", "");
-        final var s = inputString.split(" ");
+        val s = inputString.split(" ");
 
-        final var linkParentColumn = s[0];
-        final var schemaName = s[1];
-        final var name = s[2];
-        final var linkChildrenColumn = s[3];
+        val linkParentColumn = s[0];
+        val schemaName = s[1];
+        val name = s[2];
+        val linkChildrenColumn = s[3];
 
         return ForeignTable.builder()
                            .name(name)

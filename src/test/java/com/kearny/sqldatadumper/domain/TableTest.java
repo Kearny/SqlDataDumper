@@ -7,6 +7,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import lombok.val;
+
 import static org.assertj.core.api.Assertions.*;
 
 class TableTest {
@@ -16,35 +18,35 @@ class TableTest {
     @BeforeEach
     void setUp() {
 
-        final var intColumn = Column.builder()
-                                    .ordinal(1)
-                                    .name("id")
-                                    .type("bigint")
-                                    .build();
-        final var stringColumn = Column.builder()
-                                       .ordinal(2)
-                                       .name("name")
-                                       .type("character")
-                                       .build();
-        final var booleanColumn = Column.builder()
-                                        .ordinal(3)
-                                        .name("isPublished")
-                                        .type("boolean")
-                                        .build();
-        final var columns = new ArrayList<Column>();
+        val intColumn = Column.builder()
+                              .ordinal(1)
+                              .name("id")
+                              .type("bigint")
+                              .build();
+        val stringColumn = Column.builder()
+                                 .ordinal(2)
+                                 .name("name")
+                                 .type("character")
+                                 .build();
+        val booleanColumn = Column.builder()
+                                  .ordinal(3)
+                                  .name("isPublished")
+                                  .type("boolean")
+                                  .build();
+        val columns = new ArrayList<Column>();
         columns.add(intColumn);
         columns.add(stringColumn);
         columns.add(booleanColumn);
 
-        final var rows = new HashMap<Integer, String[]>();
+        val rows = new HashMap<Integer, String[]>();
 
-        final var firstRowValues = new String[columns.size()];
+        val firstRowValues = new String[columns.size()];
         firstRowValues[0] = "10234";
         firstRowValues[1] = null;
         firstRowValues[2] = "T";
         rows.put(0, firstRowValues);
 
-        final var secondRowValues = new String[columns.size()];
+        val secondRowValues = new String[columns.size()];
         secondRowValues[0] = "56789";
         secondRowValues[1] = "Ceci est une chaîne de caractères.";
         secondRowValues[2] = "F";
@@ -69,7 +71,7 @@ class TableTest {
         // Given
 
         // When
-        final var value = table.getValue(0, 1);
+        val value = table.getValue(0, 1);
 
         // Then
         assertThat(value).isEqualTo("10234");
@@ -81,7 +83,7 @@ class TableTest {
         // Given
 
         // When
-        final var valueToString = table.getValueToString(0, 1);
+        val valueToString = table.getValueToString(0, 1);
 
         // Then
         assertThat(valueToString).isEqualTo("10234");
@@ -93,7 +95,7 @@ class TableTest {
         // Given
 
         // When
-        final var valueToString = table.getValueToString(1, 2);
+        val valueToString = table.getValueToString(1, 2);
 
         // Then
         assertThat(valueToString).isEqualTo("'Ceci est une chaîne de caractères.'");
@@ -105,8 +107,8 @@ class TableTest {
         // Given
 
         // When
-        final var trueValueToString = table.getValueToString(0, 3);
-        final var falseValueToString = table.getValueToString(1, 3);
+        val trueValueToString = table.getValueToString(0, 3);
+        val falseValueToString = table.getValueToString(1, 3);
 
         // Then
         assertThat(trueValueToString).isEqualTo("TRUE");
@@ -119,7 +121,7 @@ class TableTest {
         // Given
 
         // When
-        final var valueToString = table.getValueToString(0, 2);
+        val valueToString = table.getValueToString(0, 2);
 
         // Then
         assertThat(valueToString).isEqualTo("NULL");

@@ -14,6 +14,8 @@ import com.kearny.sqldatadumper.domain.Column;
 import com.kearny.sqldatadumper.domain.ForeignTable;
 import com.kearny.sqldatadumper.domain.Table;
 
+import lombok.val;
+
 import static org.assertj.core.api.Assertions.*;
 
 @SpringBootTest
@@ -51,15 +53,15 @@ class TableServiceIT {
     @BeforeEach
     void setUp() {
 
-        final var columns = new ArrayList<Column>(21);
+        val columns = new ArrayList<Column>(21);
         columns.add(idColumn);
         columns.add(codeMoisColumn);
         columns.add(idEvtColumn);
         columns.add(idPayplanColumn);
 
-        final var rows = new HashMap<Integer, String[]>();
+        val rows = new HashMap<Integer, String[]>();
 
-        final var firstRowValues = new String[columns.size()];
+        val firstRowValues = new String[columns.size()];
         firstRowValues[0] = FIRST_ROW_ID;
         firstRowValues[1] = "201906";
         firstRowValues[2] = "15090963-41d9-47cc-8be3-6300591b2d82";
@@ -80,11 +82,11 @@ class TableServiceIT {
             throws SQLException, IOException {
 
         // Given
-        final var table = Table.builder()
-                               .schemaName("valo_fixe")
-                               .name("valorisation")
-                               .select(String.format("SELECT * FROM valo_fixe.valorisation WHERE id = %s;", FIRST_ROW_ID))
-                               .build();
+        val table = Table.builder()
+                         .schemaName("valo_fixe")
+                         .name("valorisation")
+                         .select(String.format("SELECT * FROM valo_fixe.valorisation WHERE id = %s;", FIRST_ROW_ID))
+                         .build();
 
         // When
         tableService.hydrateTable(table);
@@ -104,7 +106,7 @@ class TableServiceIT {
         tableService.findColumnsProperties(table);
 
         // Then
-        final var columns = table.getColumns();
+        val columns = table.getColumns();
         assertThat(columns).isNotEmpty();
         assertThat(columns.size()).isEqualTo(21);
         assertThat(columns.get(0)).isEqualTo(idColumn);
@@ -139,7 +141,7 @@ class TableServiceIT {
         tableService.findForeignTables(table);
 
         // Then
-        final var foreignTables = table.getForeignTables();
+        val foreignTables = table.getForeignTables();
         assertThat(foreignTables).isNotNull();
         assertThat(foreignTables.size()).isEqualTo(14);
     }
@@ -148,16 +150,16 @@ class TableServiceIT {
     void testBuildForeignTableFromDefinition() {
 
         // Given
-        final var expectedTable = ForeignTable.builder()
-                                              .name("partenaire")
-                                              .schemaName("valo_common")
-                                              .linkParentColumn("code_partenaire")
-                                              .linkChildrenColumn("code")
-                                              .build();
-        final var definition = "FOREIGN KEY (code_partenaire) REFERENCES valo_common.partenaire(code) MATCH FULL";
+        val expectedTable = ForeignTable.builder()
+                                        .name("partenaire")
+                                        .schemaName("valo_common")
+                                        .linkParentColumn("code_partenaire")
+                                        .linkChildrenColumn("code")
+                                        .build();
+        val definition = "FOREIGN KEY (code_partenaire) REFERENCES valo_common.partenaire(code) MATCH FULL";
 
         // When
-        final var foreignTableFromDef = tableService.buildForeignTableFromDefinition(definition);
+        val foreignTableFromDef = tableService.buildForeignTableFromDefinition(definition);
 
         // Then
         assertThat(foreignTableFromDef).isNotNull();

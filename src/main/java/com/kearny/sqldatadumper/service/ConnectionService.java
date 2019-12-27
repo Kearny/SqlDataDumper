@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class ConnectionService {
 
+    private static final String URL = "jdbc:postgresql://localhost:5432/melody";
+
     private Connection connection;
 
     public ResultSet runSqlQuery(final String query)
@@ -21,10 +23,9 @@ public class ConnectionService {
     private Connection getConnectionInstance() {
 
         if (connection == null) {
-            final var url = "jdbc:postgresql://localhost:5432/melody";
 
             try {
-                connection = DriverManager.getConnection(url, "postgres", "root");
+                connection = DriverManager.getConnection(URL, "postgres", "root");
             } catch (final SQLException e) {
                 e.printStackTrace();
             }
